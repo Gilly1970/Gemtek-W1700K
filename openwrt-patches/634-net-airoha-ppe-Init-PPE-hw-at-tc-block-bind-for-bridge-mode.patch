@@ -1,4 +1,4 @@
-From: Local Fix <local@fix.patch>
+From: Gilly
 Date: Fri, 17 Apr 2026 00:00:00 +0000
 Subject: [PATCH] net: airoha: ppe: Init PPE hardware at TC block bind time for bridge/AP mode
 
