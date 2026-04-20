@@ -1,6 +1,6 @@
 # **Gemtek-W1700K - OpenWrt SnapShot Build Script**
 
-A huge thanks to everyone on the [Quantum Fiber W1700k](https://forum.openwrt.org/t/quantum-fiber-w1700k-support/222776) forum for the incredible work that's gone into getting this device to where it is today. Special thanks to [rchen14b](https://github.com/rchen14b) for the fantastic apps included in this build, along with many of your patches.
+A huge thanks to everyone on the [Quantum Fiber W1700k](https://forum.openwrt.org/t/quantum-fiber-w1700k-support/222776) forum for the incredible work that's gone into getting this device to where it is today.
 
 This is a customized OpenWrt firmware build srript for the **Gemtek W1700K** WiFi 7 (BE19000) router, based on the Airoha AN7581 SoC with MT7996 wireless chipset.
 
@@ -17,7 +17,7 @@ unzip zlib1g-dev file wget dos2unix`
 ### Clone Repo & Initial Build
 
 ```csharp
-git clone https://github.com/Gilly1970/
+git clone https://github.com/Gilly1970/Gemtek-W1700K.git
 ```
 ```csharp
 sudo chmod 775 -R Gemtek-W1700K
