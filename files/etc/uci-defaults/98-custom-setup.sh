@@ -1,11 +1,6 @@
 #!/bin/sh
 
-# Enable and start the fan service
-chmod +x /usr/libexec/rpcd/luci.fan
-chmod +x /etc/init.d/fan
-/etc/init.d/fan enable
-/etc/init.d/fan start
-
+# Enable and start the flowsense service
 chmod +x /usr/libexec/rpcd/luci.airoha_flowsense
 chmod +x /etc/init.d/npu-jitter
 chmod +x /usr/libexec/npu-jitter-daemon
