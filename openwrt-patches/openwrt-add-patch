@@ -1,0 +1,85 @@
+package/firmware/wireless-regdb/patches/555-US-fix.patch
+
+### Change from 0% to 0.0% in luci status overview bars
+feeds/luci/modules/luci-mod-status/patches/999-memory-storage-bar-adjust.patch
+
+### Fix BE 6GHz band not showing in luci on fresh install
+package/firmware/wireless-regdb/patches/600-world-regd-6GHz.patch
+package/kernel/mt76/patches/007-mt7996-fix-BSS-init-timing-before-beacon-enable.patch
+package/kernel/mt76/patches/008-wifi-mt76-mt7996-Fix-NULL-pointer-dereference-in-mt7996_init_tx_queues.patch
+
+### fix RTL8261N PHY boot failure
+target/linux/airoha/dts/an7581-w1700k-ubi.dts
+
+### fix USXGMII data path on speed changes
+target/linux/airoha/patches-6.12/620-net-pcs-airoha-fix-USXGMII-rate-adaptation-on-speed.patch
+target/linux/airoha/patches-6.12/621-net-pcs-airoha-AN7581-add-global-digital-reset-for.patch
+
+### fix cpufreq and PM domain drivers for AN7581
+target/linux/airoha/dts/an7581.dtsi
+target/linux/airoha/patches-6.12/039-v6.14-cpufreq-airoha-Add-EN7581-CPUFreq-SMCCC-driver.patch
+target/linux/airoha/patches-6.12/040-v6.14-pmdomain-airoha-Add-Airoha-CPU-PM-Domain-support.patch
+
+### Fix setup of non-80MHz 802.11s mesh interfaces on EHT hardware
+package/network/config/wifi-scripts/files-ucode/usr/share/ucode/wifi/supplicant.uc
+package/network/services/hostapd/patches/602-allow-config-EHT-rate.patch
+
+### add L2 bridge offload support
+target/linux/generic/hack-6.12/721-net-add-packet-mangeling.patch
+target/linux/generic/pending-6.12/675-01-net-export-__dev_fill_forward_path-and-br_fdb_find_rcu.patch
+target/linux/generic/pending-6.12/675-02-nft_flow_offload-add-bridging-support.patch
+target/linux/generic/pending-6.12/675-03-nft_flow_offload-add-DEV_PATH_MTK_WDMA-path.patch
+target/linux/generic/pending-6.12/675-04-nft_flow_offload-add-vlan-passthrough-support.patch
+target/linux/generic/pending-6.12/700-netfilter-nft_flow_offload-handle-netdevice-events-f.patch
+
+### enable bridge offload for AN7581 target
+# target/linux/airoha/an7581/base-files/etc/uci-defaults/15-w1700k-flow-offload
+target/linux/airoha/an7581/target.mk
+target/linux/airoha/base-files/etc/sysctl.d/13-nf-bridge.conf
+
+### hostapd: mtk: 6G band does not require DFS
+package/network/config/wifi-scripts/patches/010-wifi-scripts-enable-EHT-beamforming-by-default.patch
+package/network/services/hostapd/patches/015-mtk-hostapd-mtk-6G-band-does-not-require-DFS.patch
+target/linux/airoha/patches-6.12/990-01-smartrg-netfilter-nf_flow_table-invalidate-flows-on-bridge-FDB-roaming.patch
+
+### wifi: mt76: mt7996: fix capability of EHT-MCS 15 in MRU
+package/kernel/mac80211/patches/subsys/372-wifi-cfg80211-fix-definition-of-EHT-MCS-15-in-MRU.patch
+package/kernel/mac80211/patches/subsys/373-wifi-mac80211-fix-missing-ieee80211_eml_params-membe.patch
+package/kernel/mt76/patches/0005-wifi-mt76-mt7996-fix-capability-of-EHT-MCS-15-in-MRU.patch
+
+### PPE MTU + airoha driver fixes (Lorenzo, April 2026)
+target/linux/airoha/patches-6.12/626-net-v2-net-ethernet-mtk_eth_soc-initialize-PPE-per-tag-layer-MTU-registers.patch
+target/linux/airoha/patches-6.12/627-net-v2-net-airoha-Add-missing-bits-in-airoha_qdma_cleanup_tx_queue.patch
+target/linux/airoha/patches-6.12/628-net-next-net-airoha-Wait-for-TX-to-complete-in-airoha_dev_stop.patch
+target/linux/airoha/patches-6.12/629-net-net-airoha-Fix-max-TX-packet-length-configuration.patch
+target/linux/airoha/patches-6.12/630-net-net-airoha-Wait-for-NPU-PPE-configuration-to-complete-in-airoha_ppe_offload_setup.patch
+target/linux/airoha/patches-6.12/633-net-net-airoha-Fix-possible-TX-queue-stall-in-airoha_qdma_tx_napi_poll.patch
+target/linux/airoha/patches-6.12/635-net-v3-net-airoha-Move-entries-to-queue-head-DMA-mapping-failure.patch
+target/linux/airoha/patches-6.12/636-net-v2-1-2-net-airoha-Move-ndesc-initialization-at-end-of-airoha_qdma_init_rx_queue.patch
+target/linux/airoha/patches-6.12/637-net-v2-2-2-net-airoha-Add-size-check-for-TX-NAPIs-in-airoha_qdma_cleanup.patch
+
+### Fix PPE hw offload in bridge/AP mode (empty software FDB blocks nf_flow_table traversal)
+target/linux/airoha/patches-6.12/634-net-airoha-ppe-Init-PPE-hw-at-tc-block-bind-for-bridge-mode.patch
+
+### Realtek 5G/10G PHY support (PR #22563) — replaces old kmod-phy-rtl8261n SDK approach
+### 736: firmware-based init for RTL8261N/RTL8261BE/RTL8251L via upstream realtek driver
+### 024-02/04: RTL8224 pair order + polarity support (backport v7.1)
+### 740: MDI pair swapping for RTL8226
+### phy_patch*.c/h: new kernel source files for the firmware patch engine (not in any .patch)
+phy_patch.h:target/linux/generic/files/drivers/net/phy/realtek/phy_patch.h
+phy_patch_rtl826x.h:target/linux/generic/files/drivers/net/phy/realtek/phy_patch_rtl826x.h
+phy_patch.c:target/linux/generic/files/drivers/net/phy/realtek/phy_patch.c
+phy_patch_rtl826x.c:target/linux/generic/files/drivers/net/phy/realtek/phy_patch_rtl826x.c
+target/linux/generic/hack-6.12/736-net-phy-realtek-add-5G-and-10G-PHY-support.patch
+target/linux/generic/pending-6.12/024-02-v7.1-net-phy-realtek-add-RTL8224-pair-order-support.patch
+target/linux/generic/pending-6.12/024-04-v7.1-net-phy-realtek-add-RTL8224-polarity-support.patch
+target/linux/generic/pending-6.12/741-net-phy-realtek-support-MDI-swapping-for-RTL8226.patch
+### 742: mask RTL826x interrupt before hardware reset — fixes IRQ disabled on first boot after flash
+target/linux/generic/hack-6.12/742-net-phy-realtek-rtl826x-mask-interrupt-before-reset.patch
+### rtl826x-firmware package (builds rtl8261n.bin from source at github.com/balika011/realtek_phy_firmware)
+rtl826x-firmware-Makefile:package/firmware/rtl826x-firmware/Makefile
+### an7581.mk — W1700K DEVICE_PACKAGES updated to kmod-phy-realtek + rtl8261n-firmware
+an7581.mk:target/linux/airoha/image/an7581.mk
+### Enable CONFIG_REALTEK_PHY=m for airoha an7581 target
+config-6.12:target/linux/airoha/an7581/config-6.12
+
