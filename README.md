@@ -16,10 +16,10 @@ unzip zlib1g-dev file wget dos2unix`
 
 ### Clone Repo & Initial Build
 
-```csharp
+```bash
 git clone https://github.com/Gilly1970/Gemtek-W1700K.git
 ```
-```csharp
+```bash
 sudo chmod 775 -R Gemtek-W1700K
 ```
 ### Make the script executable and run script
@@ -61,3 +61,13 @@ make dirclean                # Full clean including toolchain
 **To add a new patch**: place the file in `openwrt-patches/` and add its destination path to `openwrt-patches/openwrt-add-patch`.
 
 **To add a runtime file** (lands on the router filesystem): place it under `files/etc/...`.
+
+##  Please note 
+This is a heavly patched repo and can and will break as new commits are added to master. 
+I have locked in the last commit that I've compiled and built and can confirm working. 
+If you want to build from the latest commit just remove the commit hash `readonly OPENWRT_COMMIT=""` and it will use the latest commit.  
+ 
+```bash
+OPENWRT_BRANCH="master"
+readonly OPENWRT_COMMIT="a8d5544c8349fe78e99954e948827d1c699ac5da"
+```
