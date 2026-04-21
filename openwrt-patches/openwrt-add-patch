@@ -1,4 +1,5 @@
 package/firmware/wireless-regdb/patches/555-US-fix.patch
+package/firmware/wireless-regdb/patches/700-Ozzie-320_Mhz-fix.patch
 
 ### Change from 0% to 0.0% in luci status overview bars
 feeds/luci/modules/luci-mod-status/patches/999-memory-storage-bar-adjust.patch
@@ -57,6 +58,9 @@ target/linux/airoha/patches-6.12/633-net-net-airoha-Fix-possible-TX-queue-stall-
 target/linux/airoha/patches-6.12/635-net-v3-net-airoha-Move-entries-to-queue-head-DMA-mapping-failure.patch
 target/linux/airoha/patches-6.12/636-net-v2-1-2-net-airoha-Move-ndesc-initialization-at-end-of-airoha_qdma_init_rx_queue.patch
 target/linux/airoha/patches-6.12/637-net-v2-2-2-net-airoha-Add-size-check-for-TX-NAPIs-in-airoha_qdma_cleanup.patch
+target/linux/airoha/patches-6.12/638-net-airoha-Do-not-wake-all-netdev-TX-queues-in-airoha_qdma_wake_netdev_txqs.patch
+target/linux/airoha/patches-6.12/639-net-airoha-fix-BQL-imbalance-in-TX-path.patch
+target/linux/airoha/patches-6.12/640-net-airoha-stop-net_device-TX-queue-before-updating-CPU-index.patch
 
 ### Fix PPE hw offload in bridge/AP mode (empty software FDB blocks nf_flow_table traversal)
 target/linux/airoha/patches-6.12/634-net-airoha-ppe-Init-PPE-hw-at-tc-block-bind-for-bridge-mode.patch
