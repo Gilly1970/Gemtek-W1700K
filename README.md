@@ -62,10 +62,38 @@ make dirclean                # Full clean including toolchain
 
 **To add a runtime file** (lands on the router filesystem): place it under `files/etc/...`.
 
-##  Please note 
-This is a heavly patched repo and can and will break as new commits are added to master. 
-I have locked in the last commit that I've compiled and built and can confirm working. 
-If you want to build from the latest commit just remove the commit hash `readonly OPENWRT_COMMIT=""` and it will use the latest commit.  
+## luci-app-airoha-flowsense
+
+**Monitoring dashboard for:** Visual Hardware Offload & PPE Performance Monitor for the Gemtek W1700K (Airoha AN7581 / MT7996).
+
+## Enable and start the flowsense service
+
+```bash
+chmod +x /usr/libexec/rpcd/luci.airoha_flowsense
+chmod +x /etc/init.d/npu-jitter
+chmod +x /usr/libexec/npu-jitter-daemon
+/etc/init.d/npu-jitter enable
+/etc/init.d/npu-jitter start
+/etc/init.d/rpcd restart
+```
+## Configuration
+
+`/etc/config/npu-monitor` — UCI config created on install:
+
+```
+config jitter 'settings'
+    option ping_target '1.1.1.1'
+```
+
+Change `ping_target` to any reachable upstream host for latency monitoring.
+
+---
+
+> [!NOTE]
+> My builds do not have cpu overclocking and are built from master.
+> This is a heavly patched repo and can and will break as new commits are added to master. 
+> I have locked in the last commit that I've compiled and built and can confirm working. 
+> If you want to build from the latest commit just remove the commit hash `readonly OPENWRT_COMMIT=""` and it will use the latest commit.  
  
 ```bash
 OPENWRT_BRANCH="master"
