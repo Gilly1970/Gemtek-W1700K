@@ -4,6 +4,9 @@ A huge thanks to everyone on the [Quantum Fiber W1700k](https://forum.openwrt.or
 
 This is a customized OpenWrt firmware build srript for the **Gemtek W1700K** WiFi 7 (BE19000) router, based on the Airoha AN7581 SoC with MT7996 wireless chipset.
 
+> [!WARNING]
+> For those that prefer to build locally (For old farts like me)
+
 ## Build Commands
 
 ### Prerequisites (Ubuntu 24.04+)
