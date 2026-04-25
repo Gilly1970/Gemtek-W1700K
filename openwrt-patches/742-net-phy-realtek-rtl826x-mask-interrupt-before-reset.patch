@@ -9,23 +9,22 @@ unhandled IRQ, fires "nobody cared", and permanently disables the line.
 With the IRQ dead the PHY can never signal link-up, leaving the port
 down on the first boot after a cold flash.
 
-Silence the PHY interrupt output (VEND2:INER = 0, VEND1:0xE1[0] = 0)
-before triggering the reset so the pin stays de-asserted until
-rtl826x_config_intr() is called later by phylib.
+Silence the VEND2 interrupt enables before triggering the reset so the
+interrupt sources are masked until rtl826x_config_intr() is called later
+by phylib.
 
 --- a/drivers/net/phy/realtek/realtek_main.c
 +++ b/drivers/net/phy/realtek/realtek_main.c
-@@ -2635,6 +2635,14 @@ static int rtl826x_config_init(struct phy_device *phydev)
+@@ -2635,6 +2635,13 @@ static int rtl826x_config_init(struct phy_device *phydev)
  	unsigned int tries = 0;
  	int ret;
-
-+	/* Suppress PHY interrupt output before the hardware reset below.
+ 
++	/* Mask VEND2 interrupt enables before the soft-reset below.
 +	 * The RTL8261N asserts its interrupt pin during power-on reset, which
 +	 * races with phylib registering phy_interrupt. If the IRQ fires first
 +	 * the kernel disables it permanently. rtl826x_config_intr() will
 +	 * re-enable the interrupt correctly once phylib is ready. */
 +	phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL826X_VND2_INER, 0);
-+	phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0xE1, BIT(0), 0);
 +
  	/* toggle reset */
  	ret = phy_modify_mmd_changed(phydev, MDIO_MMD_VEND1, 0x145, BIT(0), 1);
