@@ -1,31 +1,17 @@
 From: Gilly <gilroyscott1970@gmail.com>
 Date: Mon, 20 Apr 2026 00:00:00 +1000
-Subject: net: phy: realtek: mask RTL826x interrupt before hardware reset
-
-rtl826x_config_init() toggles the PHY soft-reset via VEND1:0x145[0].
-On power-on the RTL8261N asserts its interrupt pin during this reset
-sequence before phylib has registered phy_interrupt. The kernel sees an
-unhandled IRQ, fires "nobody cared", and permanently disables the line.
-With the IRQ dead the PHY can never signal link-up, leaving the port
-down on the first boot after a cold flash.
-
-Silence the VEND2 interrupt enables before triggering the reset so the
-interrupt sources are masked until rtl826x_config_intr() is called later
-by phylib.
-
+Subject: net: phy: realtek: mask RTL826x interrupt after soft reset
 --- a/drivers/net/phy/realtek/realtek_main.c
 +++ b/drivers/net/phy/realtek/realtek_main.c
-@@ -2635,6 +2635,13 @@ static int rtl826x_config_init(struct phy_device *phydev)
- 	unsigned int tries = 0;
- 	int ret;
- 
-+	/* Mask VEND2 interrupt enables before the soft-reset below.
-+	 * The RTL8261N asserts its interrupt pin during power-on reset, which
-+	 * races with phylib registering phy_interrupt. If the IRQ fires first
-+	 * the kernel disables it permanently. rtl826x_config_intr() will
-+	 * re-enable the interrupt correctly once phylib is ready. */
+@@ -2654,6 +2654,11 @@ static int rtl826x_config_init(struct phy_device *phydev)
+
+ 	msleep(30);
+
++	/* Soft reset restores VEND2:INER to default (enabled); re-mask before
++	 * autoneg-complete can fire the IRQ. Without this, "nobody cared" kills
++	 * the line permanently. rtl826x_config_intr() re-enables once ready. */
 +	phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL826X_VND2_INER, 0);
 +
- 	/* toggle reset */
- 	ret = phy_modify_mmd_changed(phydev, MDIO_MMD_VEND1, 0x145, BIT(0), 1);
- 	if (ret < 0)
+ 	ret = rtlgen_phy_patch(phydev);
+ 	if (ret) {
+ 		phydev_err(phydev, "patch failed!! %d\n", ret);
