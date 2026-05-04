@@ -351,8 +351,8 @@
 			compatible = "ethernet-phy-ieee802.3-c45";
 			reg = <5>;
 			reset-gpios = <&en7581_pinctrl 46 GPIO_ACTIVE_LOW>;
-			reset-assert-us = <200000>;
-			reset-deassert-us = <200000>;
+			reset-assert-us = <40000>;
+			reset-deassert-us = <150000>;
 			realtek,pnswap-tx;
 			realtek,pnswap-rx;
 		};
@@ -361,8 +361,8 @@
 			compatible = "ethernet-phy-ieee802.3-c45";
 			reg = <8>;
 			reset-gpios = <&en7581_pinctrl 31 GPIO_ACTIVE_LOW>;
-			reset-assert-us = <200000>;
-			reset-deassert-us = <200000>;
+			reset-assert-us = <40000>;
+			reset-deassert-us = <150000>;
 			realtek,pnswap-tx;
 			realtek,pnswap-rx;
 		};

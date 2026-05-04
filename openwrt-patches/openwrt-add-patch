@@ -48,19 +48,12 @@ package/kernel/mac80211/patches/subsys/372-wifi-cfg80211-fix-definition-of-EHT-M
 package/kernel/mac80211/patches/subsys/373-wifi-mac80211-fix-missing-ieee80211_eml_params-membe.patch
 package/kernel/mt76/patches/0005-wifi-mt76-mt7996-fix-capability-of-EHT-MCS-15-in-MRU.patch
 
-### PPE MTU + airoha driver fixes (Lorenzo, April 2026)
-target/linux/airoha/patches-6.12/626-net-v2-net-ethernet-mtk_eth_soc-initialize-PPE-per-tag-layer-MTU-registers.patch
-target/linux/airoha/patches-6.12/627-net-v2-net-airoha-Add-missing-bits-in-airoha_qdma_cleanup_tx_queue.patch
+### airoha driver fixes still ahead of upstream (Lorenzo series)
+### 626 (initialize PPE per-tag-layer MTU registers) was upstreamed into Linux 6.12.84 — removed
 target/linux/airoha/patches-6.12/628-net-next-net-airoha-Wait-for-TX-to-complete-in-airoha_dev_stop.patch
 target/linux/airoha/patches-6.12/629-net-net-airoha-Fix-max-TX-packet-length-configuration.patch
-target/linux/airoha/patches-6.12/630-net-net-airoha-Wait-for-NPU-PPE-configuration-to-complete-in-airoha_ppe_offload_setup.patch
-target/linux/airoha/patches-6.12/633-net-net-airoha-Fix-possible-TX-queue-stall-in-airoha_qdma_tx_napi_poll.patch
 target/linux/airoha/patches-6.12/635-net-v3-net-airoha-Move-entries-to-queue-head-DMA-mapping-failure.patch
-target/linux/airoha/patches-6.12/636-net-v2-1-2-net-airoha-Move-ndesc-initialization-at-end-of-airoha_qdma_init_rx_queue.patch
-target/linux/airoha/patches-6.12/637-net-v2-2-2-net-airoha-Add-size-check-for-TX-NAPIs-in-airoha_qdma_cleanup.patch
-target/linux/airoha/patches-6.12/638-net-airoha-Do-not-wake-all-netdev-TX-queues-in-airoha_qdma_wake_netdev_txqs.patch
-target/linux/airoha/patches-6.12/639-net-airoha-fix-BQL-imbalance-in-TX-path.patch
-target/linux/airoha/patches-6.12/640-net-airoha-stop-net_device-TX-queue-before-updating-CPU-index.patch
+target/linux/airoha/patches-6.12/636-net-next-net-airoha-configure-QoS-channel-for-HW-accelerated-flowtable-traffic.patch
 
 ### Fix PPE hw offload in bridge/AP mode (empty software FDB blocks nf_flow_table traversal)
 target/linux/airoha/patches-6.12/634-net-airoha-ppe-Init-PPE-hw-at-tc-block-bind-for-bridge-mode.patch
@@ -78,12 +71,45 @@ target/linux/generic/hack-6.12/736-net-phy-realtek-add-5G-and-10G-PHY-support.pa
 target/linux/generic/pending-6.12/024-02-v7.1-net-phy-realtek-add-RTL8224-pair-order-support.patch
 target/linux/generic/pending-6.12/024-04-v7.1-net-phy-realtek-add-RTL8224-polarity-support.patch
 target/linux/generic/pending-6.12/741-net-phy-realtek-support-MDI-swapping-for-RTL8226.patch
-### 742: mask RTL826x interrupt before hardware reset — fixes IRQ disabled on first boot after flash
-target/linux/generic/hack-6.12/742-net-phy-realtek-rtl826x-mask-interrupt-before-reset.patch
 ### rtl826x-firmware package (builds rtl8261n.bin from source at github.com/balika011/realtek_phy_firmware)
 rtl826x-firmware-Makefile:package/firmware/rtl826x-firmware/Makefile
 ### an7581.mk — W1700K DEVICE_PACKAGES updated to kmod-phy-realtek + rtl8261n-firmware
 an7581.mk:target/linux/airoha/image/an7581.mk
 ### Enable CONFIG_REALTEK_PHY=m for airoha an7581 target
 config-6.12:target/linux/airoha/an7581/config-6.12
+
+### IRQ race + firmware-load fix for RTL8261N PHY
+target/linux/generic/hack-6.12/743-net-phy-realtek-rtl826x-fix-irq-race-and-firmware-load.patch
+
+### EIP93 crypto driver fixes (from openwrt/openwrt PR #20130)
+### Must be in airoha/patches-6.12 (NOT generic/backport-6.12) because the driver
+### is added by airoha/patches-6.12/201-crypto-Add-Mediatek-EIP-93-crypto-engine-support.patch
+### and generic patches run before target patches — so the files don't exist yet during
+### the generic patch phase (and during toolchain/kernel-headers build).
+### 203: fix sg_nents_for_len error ignored (u32 → int, add error checks)
+817-v6.15-crypto-inside-secure-eip93-Correctly-handle-return-o.patch:target/linux/airoha/patches-6.12/203-v6.15-crypto-inside-secure-eip93-Correctly-handle-return-o.patch
+### 204: fix ecb(des-eip93) driver name typo (ebc→ecb) — 6.12 airoha + 6.18 generic
+829-v7.1-crypto-inside-secure-eip93-correct-ecb-des-eip93-typo.patch:target/linux/airoha/patches-6.12/204-v7.1-crypto-inside-secure-eip93-correct-ecb-des-eip93-typo.patch
+829-v7.1-crypto-inside-secure-eip93-correct-ecb-des-eip93-typo.patch:target/linux/generic/backport-6.18/829-v7.1-crypto-inside-secure-eip93-correct-ecb-des-eip93-typo.patch
+### 205: fix missing > address terminator in copyright headers — 6.12 airoha + 6.18 generic
+830-v7.1-crypto-inside-secure-eip93-add-missing-address-terminator.patch:target/linux/airoha/patches-6.12/205-v7.1-crypto-inside-secure-eip93-add-missing-address-terminator.patch
+830-v7.1-crypto-inside-secure-eip93-add-missing-address-terminator.patch:target/linux/generic/backport-6.18/830-v7.1-crypto-inside-secure-eip93-add-missing-address-terminator.patch
+### 206: fix kernel panic on driver detach (wrong index i→j in unregister loop) — 6.12 airoha only
+831-v7.0-crypto-inside-secure-eip93-fix-kernel-panic-in-drive.patch:target/linux/airoha/patches-6.12/206-v7.0-crypto-inside-secure-eip93-fix-kernel-panic-in-drive.patch
+### 207: fix wrong register offset for EIP93_REG_PE_INBUF_COUNT (0x100→0x110)
+833-v7.1-crypto-inside-secure-eip93-fix-register-definition.patch:target/linux/airoha/patches-6.12/207-v7.1-crypto-inside-secure-eip93-fix-register-definition.patch
+### 208: register hash algos before authenc so crypto self-tests pass at boot
+834-v7.1-crypto-inside-secure-eip93-register-hash-before-auth.patch:target/linux/airoha/patches-6.12/208-v7.1-crypto-inside-secure-eip93-register-hash-before-auth.patch
+### 209/831: allow EIP93 to be selected for ECONET SoCs (harmless for AN7581) — 209 for 6.12, 831 for 6.18
+835-v7.1-crypto-inside-secure-eip93-make-it-selectable-for-.patch:target/linux/airoha/patches-6.12/209-v7.1-crypto-inside-secure-eip93-make-it-selectable-for-.patch
+831-v7.1-crypto-inside-secure-eip93-make-it-selectable-for-ECONET.patch:target/linux/generic/backport-6.18/831-v7.1-crypto-inside-secure-eip93-make-it-selectable-for-ECONET.patch
+### 210: unregister only HW-supported algorithms (prevents panic on limited silicon)
+### Hand-rebased to 6.12 (variable still named `mtk` in 6.12, renamed to `eip93` upstream).
+210-v7.0-crypto-inside-secure-eip93-unregister-only-available.patch:target/linux/airoha/patches-6.12/210-v7.0-crypto-inside-secure-eip93-unregister-only-available.patch
+### 836 NOT rebased — already covered by 206 (fix-kernel-panic-in-drive) which already
+### sets the third arg of crypto_alloc_ahash() to 0 in eip93_hmac_setkey().
+### 928 NOT rebased — defensive hack patch (NULL guards on DMA unmap) targets a
+### post-refactor 6.18 eip93-hash.c. 6.12's pre-refactor form has different function
+### signatures and helper structure; rebase would be a near-rewrite with no documented
+### crash signature in 6.12. Revisit only if a related panic appears.
 

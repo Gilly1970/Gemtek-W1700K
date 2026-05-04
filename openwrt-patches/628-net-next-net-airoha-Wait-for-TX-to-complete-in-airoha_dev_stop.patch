@@ -28,7 +28,7 @@ index ae47c39..5553b0f 100644
  	if (err)
  		return err;
  
--	for (i = 0; i < ARRAY_SIZE(qdma->q_tx); i++)
+-	for (i = 0; i < dev->num_tx_queues; i++)
 -		netdev_tx_reset_subqueue(dev, i);
 -
  	airoha_set_gdm_port_fwd_cfg(qdma->eth, REG_GDM_FWD_CFG(port->id),
