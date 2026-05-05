@@ -6,7 +6,15 @@
 
 CONFIG=/etc/config/lan2-rxwatchdog
 COUNTER_FILE=/etc/.lan2-rx-attempts
+PASS_MARKER=/tmp/.lan2-rx-passed
 RX_REG=0x1fb52648
+
+# Idempotency guard: if we already passed this boot, do nothing.
+# /tmp is tmpfs so the marker is cleared on reboot.
+if [ -e "$PASS_MARKER" ]; then
+    logger -t lan2-rxwatchdog "already passed this boot, exiting"
+    exit 0
+fi
 
 # Defaults (overridable via /etc/config/lan2-rxwatchdog)
 ENABLED=1
@@ -63,6 +71,7 @@ if [ "$RX" = "0x00000000" ]; then
     reboot
 else
     # PASS state - GDM4 is receiving
+    touch "$PASS_MARKER"
     if [ "$ATTEMPTS" -gt 0 ]; then
         logger -t lan2-rxwatchdog "PASS after $ATTEMPTS reboot(s), GDM4_RX=$RX"
         rm -f "$COUNTER_FILE"
