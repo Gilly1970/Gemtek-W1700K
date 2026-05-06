@@ -12,10 +12,17 @@ package/kernel/mt76/patches/008-wifi-mt76-mt7996-Fix-NULL-pointer-dereference-in
 
 ### fix RTL8261N PHY boot failure
 target/linux/airoha/dts/an7581-w1700k-ubi.dts
+target/linux/airoha/patches-6.12/743-net-phy-realtek-rtl826x-fix-irq-race-and-firmware-load.patch
+
+### THE LAN2 RX FIX (2026-05-06): extend manual RX calibration to E2 silicon (PRODUCT_ID=2)
+target/linux/airoha/patches-6.12/745-net-pcs-airoha-extend-manual-rx-calib-to-E2-silicon.patch
 
 ### fix USXGMII data path on speed changes
 target/linux/airoha/patches-6.12/620-net-pcs-airoha-fix-USXGMII-rate-adaptation-on-speed.patch
 target/linux/airoha/patches-6.12/621-net-pcs-airoha-AN7581-add-global-digital-reset-for.patch
+
+### defensive: serialise per-priv multi-port bringup callbacks (mt7988 race-class hardening)
+target/linux/airoha/patches-6.12/744-net-pcs-airoha-add-bringup-mutex-to-serialize-port-c.patch
 
 ### fix cpufreq and PM domain drivers for AN7581
 target/linux/airoha/dts/an7581.dtsi
@@ -82,5 +89,4 @@ config-6.12:target/linux/airoha/an7581/config-6.12
 835-v7.1-crypto-inside-secure-eip93-make-it-selectable-for-.patch:target/linux/airoha/patches-6.12/209-v7.1-crypto-inside-secure-eip93-make-it-selectable-for-.patch
 831-v7.1-crypto-inside-secure-eip93-make-it-selectable-for-ECONET.patch:target/linux/generic/backport-6.18/831-v7.1-crypto-inside-secure-eip93-make-it-selectable-for-ECONET.patch
 210-v7.0-crypto-inside-secure-eip93-unregister-only-available.patch:target/linux/airoha/patches-6.12/210-v7.0-crypto-inside-secure-eip93-unregister-only-available.patch
-
 

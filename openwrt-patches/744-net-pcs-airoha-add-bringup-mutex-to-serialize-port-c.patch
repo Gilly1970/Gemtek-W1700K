@@ -1,0 +1,169 @@
+From: Gilly <gilroyscott1970@gmail.com>
+Date: Mon, 5 May 2026 22:00:00 +1000
+Subject: [PATCH] net: pcs: airoha: serialize port bringup with shared mutex
+
+The Airoha AN7581 PCS driver registers a single airoha_pcs_priv that
+owns all per-port phylink_pcs instances on the same SoC PCS block (LAN2
+and WAN both go through eth_pcs on the W1700K). All ports share the
+same regmaps inside that priv (xfi_pma, xfi_mac, xfi_ana, scu,
+multi_sgmii, hsgmii_*).
+
+phylink may invoke the per-port pcs_pre_config / pcs_config /
+pcs_link_up / pcs_link_down / pcs_post_config callbacks for two ports
+concurrently. Each performs a multi-step register sequence against the
+shared regmaps; regmap's internal lock makes each individual call
+atomic but does not protect the sequence as a whole. Two concurrent
+callbacks can therefore interleave their writes and leave the PCS in
+an undefined state.
+
+Same class of race that MediaTek fixed for mt7988 in mtk-openwrt-feeds
+commit 36b179af9d39 ("Fix probabilistic system hang may occur when two
+USXGMII interfaces are present simultaneously") via a shared
+toprgu_lock. The AN7581 layout is structurally different (one priv per
+PCS block, multiple ports through it) so a single per-priv mutex
+serialising the bringup callbacks is the appropriate fix here.
+
+Add a bringup_lock mutex to airoha_pcs_priv. Take it across each of
+the multi-step phylink callbacks. link_down and post_config are
+included for symmetry even though they currently consist of only a few
+regmap calls; this prevents future additions from creating new
+interleaving windows.
+
+Defensive: not yet observed to be the trigger of any reported failure
+on AN7581. Filed as belt-and-braces against a confirmed bug class in
+the related MTK USXGMII PCS driver.
+
+Signed-off-by: Gilly <gilroyscott1970@gmail.com>
+---
+--- a/drivers/net/pcs/airoha/pcs-airoha-common.c
++++ b/drivers/net/pcs/airoha/pcs-airoha-common.c
+@@ -7,6 +7,7 @@
+ #include <linux/device.h>
+ #include <linux/mfd/syscon.h>
+ #include <linux/of.h>
++#include <linux/mutex.h>
+ #include <linux/of_platform.h>
+ #include <linux/pcs/pcs-airoha.h>
+ #include <linux/phylink.h>
+@@ -414,6 +415,8 @@
+ 	u32 rate_adapt;
+ 	int ret;
+ 
++	mutex_lock(&priv->bringup_lock);
++
+ 	priv->interface = interface;
+ 	data = priv->data;
+ 
+@@ -421,7 +424,7 @@
+ 	if (data->bringup) {
+ 		ret = data->bringup(priv, interface);
+ 		if (ret)
+-			return ret;
++			goto out;
+ 		priv->needs_full_init = true;
+ 	}
+ 
+@@ -598,7 +601,10 @@
+ 				AIROHA_PCS_XFI_TX_FC_EN | AIROHA_PCS_XFI_RX_FC_EN :
+ 				0);
+ 
+-	return 0;
++	ret = 0;
++out:
++	mutex_unlock(&priv->bringup_lock);
++	return ret;
+ }
+ 
+ static void airoha_pcs_an_restart(struct phylink_pcs *pcs)
+@@ -635,6 +641,8 @@
+ 	const struct airoha_pcs_match_data *data;
+ 
+ 	data = priv->data;
++
++	mutex_lock(&priv->bringup_lock);
+ 
+ 	if (neg_mode == PHYLINK_PCS_NEG_INBAND_ENABLED &&
+ 	    interface == PHY_INTERFACE_MODE_SGMII) {
+@@ -783,12 +791,16 @@
+ 			  AIROHA_PCS_XFI_RXMBI_STOP |
+ 			  AIROHA_PCS_XFI_TXMPI_STOP |
+ 			  AIROHA_PCS_XFI_TXMBI_STOP);
++
++	mutex_unlock(&priv->bringup_lock);
+ }
+ 
+ static void airoha_pcs_link_down(struct phylink_pcs *pcs)
+ {
+ 	struct airoha_pcs_port *port = to_airoha_pcs_port(pcs);
+ 	struct airoha_pcs_priv *priv = port->priv;
++
++	mutex_lock(&priv->bringup_lock);
+ 
+ 	/* MPI MBI disable */
+ 	regmap_set_bits(priv->xfi_mac, AIROHA_PCS_XFI_MAC_XFI_GIB_CFG,
+@@ -796,6 +808,8 @@
+ 			AIROHA_PCS_XFI_RXMBI_STOP |
+ 			AIROHA_PCS_XFI_TXMPI_STOP |
+ 			AIROHA_PCS_XFI_TXMBI_STOP);
++
++	mutex_unlock(&priv->bringup_lock);
+ }
+ 
+ static void airoha_pcs_pre_config(struct phylink_pcs *pcs,
+@@ -803,6 +817,8 @@
+ {
+ 	struct airoha_pcs_port *port = to_airoha_pcs_port(pcs);
+ 	struct airoha_pcs_priv *priv = port->priv;
++
++	mutex_lock(&priv->bringup_lock);
+ 
+ 	/* Select HSGMII or USXGMII in SCU regs */
+ 	airoha_pcs_setup_scu(priv, interface);
+@@ -825,6 +841,8 @@
+ 	/* Clear XFI MAC counter */
+ 	regmap_set_bits(priv->xfi_mac, AIROHA_PCS_XFI_MAC_XFI_CNT_CLR,
+ 			AIROHA_PCS_XFI_GLB_CNT_CLR);
++
++	mutex_unlock(&priv->bringup_lock);
+ }
+ 
+ static int airoha_pcs_post_config(struct phylink_pcs *pcs,
+@@ -832,6 +850,8 @@
+ {
+ 	struct airoha_pcs_port *port = to_airoha_pcs_port(pcs);
+ 	struct airoha_pcs_priv *priv = port->priv;
++
++	mutex_lock(&priv->bringup_lock);
+ 
+ 	/* Frag disable */
+ 	regmap_update_bits(priv->xfi_mac, AIROHA_PCS_XFI_MAC_XFI_GIB_CFG,
+@@ -851,6 +871,8 @@
+ 			AIROHA_PCS_XFI_TX_FC_EN);
+ 	regmap_set_bits(priv->xfi_mac, AIROHA_PCS_XFI_MAC_XFI_GIB_CFG,
+ 			AIROHA_PCS_XFI_RX_FC_EN);
++
++	mutex_unlock(&priv->bringup_lock);
+ 
+ 	return 0;
+ }
+@@ -933,6 +955,8 @@
+ 	priv->dev = dev;
+ 	priv->data = data;
+ 
++	mutex_init(&priv->bringup_lock);
++
+ 	base = devm_platform_ioremap_resource_byname(pdev, "xfi_mac");
+ 	if (IS_ERR(base))
+ 		return PTR_ERR(base);
+--- a/drivers/net/pcs/airoha/pcs-airoha.h
++++ b/drivers/net/pcs/airoha/pcs-airoha.h
+@@ -1187,6 +1187,9 @@
+ 	struct reset_control *xfi_rst;
+ 	struct reset_control_bulk_data rsts[AIROHA_PCS_MAX_NUM_RSTS];
+ 
++	/* Serialise multi-step bringup sequences across ports sharing this priv */
++	struct mutex bringup_lock;
++
+ 	bool manual_rx_calib;
+ 	bool needs_full_init;
+ };
