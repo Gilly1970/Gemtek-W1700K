@@ -12,6 +12,7 @@ package/kernel/mt76/patches/008-wifi-mt76-mt7996-Fix-NULL-pointer-dereference-in
 
 ### fix RTL8261N PHY boot failure
 target/linux/airoha/dts/an7581-w1700k-ubi.dts
+an7581-w1700k-ubi2.dts:target/linux/airoha/dts/an7581-w1700k-ubi2.dts
 target/linux/airoha/patches-6.12/743-net-phy-realtek-rtl826x-fix-irq-race-and-firmware-load.patch
 
 ### THE LAN2 RX FIX (2026-05-06): extend manual RX calibration to E2 silicon (PRODUCT_ID=2)
