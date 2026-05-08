@@ -1,0 +1,96 @@
+From: Gilly <gilroyscott1970@gmail.com>
+Date: Thu, 8 May 2026 00:00:00 +1000
+Subject: [PATCH v2] net: phy: fwnode_mdio: deassert PHY reset GPIOs before ID scan
+
+fwnode_mdiobus_register_phy() reads PHY identifiers via get_phy_device()
+-> get_phy_c45_ids() before any per-PHY reset GPIO declared in the
+device tree (reset-gpios on the ethernet-phy@N node) is toggled. The
+reset GPIO is only honoured later, when mdio_probe() calls
+mdio_device_reset() after the phy_device has been registered and
+matched against a driver.
+
+This is invisible on cold boot because bootloaders typically leave
+PHYs out of reset, so MDIO reads return valid IDs. The bug becomes
+visible whenever the MDIO bus is re-registered with PHYs in the
+asserted-reset state, e.g. after:
+
+    rmmod some_dsa_driver    # mdio_remove() asserts reset on each PHY
+    modprobe some_dsa_driver # MDIO scan reads 0x0000 -> wrong driver
+
+The IDs read as 0 because the PHY is held in reset, and phylib falls
+back to a generic driver (Generic Clause 22 / Generic Clause 45) that
+cannot drive a vendor-specific PHY correctly. There is no recovery
+without another module reload sequence.
+
+Reported on Airoha AN7581 with Realtek RTL8261N PHYs, where it
+prevents the Realtek driver from binding after a second mt7530_mmio
+load. The same race applies generically to any PHY that has
+reset-gpios declared and is held in reset between two MDIO bus
+registrations.
+
+Walk the reset-gpios property of each child fwnode in
+fwnode_mdiobus_register_phy(), drive it deasserted, honour the
+declared reset-deassert-us settle time, then release the GPIO so the
+later mdio_probe() reset cycle can re-acquire it via the phy_device's
+struct device.
+
+The cost on cold boot is one GPIO request/release plus the deassert
+delay per PHY (typically 100-200 ms total), one-time at bus
+registration. Negligible for the affected platforms.
+
+Signed-off-by: Gilly <gilroyscott1970@gmail.com>
+---
+--- a/drivers/net/mdio/fwnode_mdio.c
++++ b/drivers/net/mdio/fwnode_mdio.c
+@@ -7,7 +7,9 @@
+  */
+
+ #include <linux/acpi.h>
++#include <linux/delay.h>
+ #include <linux/dev_printk.h>
++#include <linux/gpio/consumer.h>
+ #include <linux/fwnode_mdio.h>
+ #include <linux/of.h>
+ #include <linux/phy.h>
+@@ -119,6 +121,32 @@ int fwnode_mdiobus_phy_device_register(struct mii_bus *mdio,
+ }
+ EXPORT_SYMBOL(fwnode_mdiobus_phy_device_register);
+
++/* Deassert any reset GPIO declared on the PHY's fwnode before reading
++ * the PHY identifier. By default the per-PHY reset is only honoured later
++ * inside mdio_probe() -> mdio_device_reset(), but get_phy_device() reads
++ * the IDs before the phy_device is even created. Pre-deassert here so the
++ * scan does not fall back to a generic driver when a previous bus
++ * registration left the PHY in reset.
++ */
++static void fwnode_mdiobus_phy_predeassert_reset(struct fwnode_handle *child)
++{
++	struct gpio_desc *gpiod;
++	u32 deassert_us;
++
++	gpiod = fwnode_gpiod_get_index(child, "reset", 0, GPIOD_OUT_LOW,
++				       "mdio-scan");
++	if (IS_ERR_OR_NULL(gpiod))
++		return;
++
++	if (fwnode_property_read_u32(child, "reset-deassert-us",
++				     &deassert_us) == 0 && deassert_us)
++		fsleep(deassert_us);
++
++	/* Release so mdio_probe() can re-acquire the line on the
++	 * phy_device's struct device for its own probe-time reset cycle. */
++	gpiod_put(gpiod);
++}
++
+ int fwnode_mdiobus_register_phy(struct mii_bus *bus,
+ 				struct fwnode_handle *child, u32 addr)
+ {
+@@ -133,6 +161,8 @@ int fwnode_mdiobus_register_phy(struct mii_bus *bus,
+ 	if (IS_ERR(mii_ts))
+ 		return PTR_ERR(mii_ts);
+
++	fwnode_mdiobus_phy_predeassert_reset(child);
++
+ 	is_c45 = fwnode_device_is_compatible(child, "ethernet-phy-ieee802.3-c45");
+ 	if (is_c45 || fwnode_get_phy_id(child, &phy_id))
+ 		phy = get_phy_device(bus, addr, is_c45);
