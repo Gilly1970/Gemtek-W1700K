@@ -1,4 +1,5 @@
 package/firmware/wireless-regdb/patches/555-US-fix.patch
+package/firmware/wireless-regdb/patches/700-Ozzie-320_Mhz-fix.patch
 
 ### Change from 0% to 0.0% in luci status overview bars
 feeds/luci/modules/luci-mod-status/patches/999-memory-storage-bar-adjust.patch
@@ -26,6 +27,11 @@ target/linux/airoha/patches-6.12/621-net-pcs-airoha-AN7581-add-global-digital-re
 
 ### defensive: serialise per-priv multi-port bringup callbacks (mt7988 race-class hardening)
 target/linux/airoha/patches-6.12/744-net-pcs-airoha-add-bringup-mutex-to-serialize-port-c.patch
+
+### CPU PM domain: add direct PLL fallback when ATF SMC AVS handler (0x82000301) is unavailable
+### (chainloader-provided ATF on ubi-2 layout doesn't implement the handler; without this the
+### upstream driver registers cpu_pd silently but cpufreq-dt fails with -ENODEV → no DVFS)
+target/linux/airoha/patches-6.12/040-v6.14-pmdomain-airoha-Add-Airoha-CPU-PM-Domain-support.patch
 
 ### AN7581 device tree overlay
 target/linux/airoha/dts/an7581.dtsi
