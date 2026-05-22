@@ -45,12 +45,13 @@ Signed-off-by: Gilly <gilroyscott1970@gmail.com>
  #include <linux/of_platform.h>
  #include <linux/pcs/pcs-airoha.h>
  #include <linux/phylink.h>
-@@ -414,6 +415,8 @@
+@@ -414,7 +415,9 @@
  	u32 rate_adapt;
  	int ret;
  
 +	mutex_lock(&priv->bringup_lock);
 +
+ 	maps = &priv->maps[port->index];
  	priv->interface = interface;
  	data = priv->data;
  
@@ -84,7 +85,7 @@ Signed-off-by: Gilly <gilroyscott1970@gmail.com>
  
  	if (neg_mode == PHYLINK_PCS_NEG_INBAND_ENABLED &&
  	    interface == PHY_INTERFACE_MODE_SGMII) {
-@@ -783,12 +791,16 @@
+@@ -783,14 +791,18 @@
  			  AIROHA_PCS_XFI_RXMBI_STOP |
  			  AIROHA_PCS_XFI_TXMPI_STOP |
  			  AIROHA_PCS_XFI_TXMBI_STOP);
@@ -96,11 +97,13 @@ Signed-off-by: Gilly <gilroyscott1970@gmail.com>
  {
  	struct airoha_pcs_port *port = to_airoha_pcs_port(pcs);
  	struct airoha_pcs_priv *priv = port->priv;
+ 	struct airoha_pcs_maps *maps;
+ 
+ 	maps = &priv->maps[port->index];
 +
 +	mutex_lock(&priv->bringup_lock);
  
  	/* MPI MBI disable */
- 	regmap_set_bits(priv->xfi_mac, AIROHA_PCS_XFI_MAC_XFI_GIB_CFG,
 @@ -796,6 +808,8 @@
  			AIROHA_PCS_XFI_RXMBI_STOP |
  			AIROHA_PCS_XFI_TXMPI_STOP |
@@ -110,15 +113,19 @@ Signed-off-by: Gilly <gilroyscott1970@gmail.com>
  }
  
  static void airoha_pcs_pre_config(struct phylink_pcs *pcs,
-@@ -803,6 +817,8 @@
+@@ -803,10 +817,12 @@
  {
  	struct airoha_pcs_port *port = to_airoha_pcs_port(pcs);
  	struct airoha_pcs_priv *priv = port->priv;
+ 	struct airoha_pcs_maps *maps;
+ 
+ 	maps = &priv->maps[port->index];
 +
 +	mutex_lock(&priv->bringup_lock);
  
  	/* Select HSGMII or USXGMII in SCU regs */
- 	airoha_pcs_setup_scu(priv, interface);
+ 	airoha_pcs_setup_scu(priv, port->index, interface);
+ 
 @@ -825,6 +841,8 @@
  	/* Clear XFI MAC counter */
  	regmap_set_bits(priv->xfi_mac, AIROHA_PCS_XFI_MAC_XFI_CNT_CLR,
@@ -128,15 +135,19 @@ Signed-off-by: Gilly <gilroyscott1970@gmail.com>
  }
  
  static int airoha_pcs_post_config(struct phylink_pcs *pcs,
-@@ -832,6 +850,8 @@
+@@ -832,10 +850,12 @@
  {
  	struct airoha_pcs_port *port = to_airoha_pcs_port(pcs);
  	struct airoha_pcs_priv *priv = port->priv;
+ 	struct airoha_pcs_maps *maps;
+ 
+ 	maps = &priv->maps[port->index];
 +
 +	mutex_lock(&priv->bringup_lock);
  
  	/* Frag disable */
- 	regmap_update_bits(priv->xfi_mac, AIROHA_PCS_XFI_MAC_XFI_GIB_CFG,
+ 	regmap_update_bits(maps->pcs_mac, AIROHA_PCS_XFI_MAC_XFI_GIB_CFG,
+ 			   AIROHA_PCS_XFI_RX_FRAG_LEN,
 @@ -851,6 +871,8 @@
  			AIROHA_PCS_XFI_TX_FC_EN);
  	regmap_set_bits(priv->xfi_mac, AIROHA_PCS_XFI_MAC_XFI_GIB_CFG,
@@ -146,15 +157,14 @@ Signed-off-by: Gilly <gilroyscott1970@gmail.com>
  
  	return 0;
  }
-@@ -933,6 +955,8 @@
+@@ -933,5 +955,7 @@
  	priv->dev = dev;
  	priv->data = data;
  
 +	mutex_init(&priv->bringup_lock);
 +
- 	base = devm_platform_ioremap_resource_byname(pdev, "xfi_mac");
- 	if (IS_ERR(base))
- 		return PTR_ERR(base);
+ 	if (data->port_type == AIROHA_PCS_USB ||
+ 	    device_is_compatible(dev, "airoha,an7583-pcs-pcie")) {
 --- a/drivers/net/pcs/airoha/pcs-airoha.h
 +++ b/drivers/net/pcs/airoha/pcs-airoha.h
 @@ -1187,6 +1187,9 @@

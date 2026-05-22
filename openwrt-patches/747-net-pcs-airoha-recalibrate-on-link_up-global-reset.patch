@@ -1,0 +1,59 @@
+From: Gilly <gilroyscott1970@gmail.com>
+Date: Thu, 21 May 2026 13:00:00 +1000
+Subject: [PATCH] net: pcs: airoha: recalibrate RX on link_up global reset
+
+Patch 621 added a global digital reset to an7581_pcs_phya_link_up()
+to handle USXGMII speed changes where phylink renegotiates within
+the same interface mode (config() is not called, only link_up()).
+The reset is guarded by needs_full_init so the first link_up after
+bringup skips it; subsequent link_up calls perform the reset.
+
+--- a/drivers/net/pcs/airoha/pcs-an7581.c
++++ b/drivers/net/pcs/airoha/pcs-an7581.c
+@@ -2004,6 +2004,7 @@ void an7581_pcs_phya_link_up(struct airoha_pcs_priv *priv, int index)
+ 		       AIROHA_PCS_PMA_SW_RX_RST_N |
+ 		       AIROHA_PCS_PMA_SW_RX_FIFO_RST_N;
+ 	struct regmap *pcs_pma = priv->pcs_pma[index];
++	int calibration_try = 0;
+ 	u32 val;
+ 	int i;
+
+@@ -2032,8 +2033,9 @@ void an7581_pcs_phya_link_up(struct airoha_pcs_priv *priv, int index)
+ 			return;
+ 		}
+
+-		dev_dbg(priv->dev, "link_up: performing global digital reset\n");
+-		an7581_pcs_cdr_reset(priv, index, priv->interface, false);
++retry_calibration:
++		dev_dbg(priv->dev, "link_up: performing global digital reset (manual_rx_calib=%d)\n", priv->manual_rx_calib);
++		an7581_pcs_cdr_reset(priv, index, priv->interface, priv->manual_rx_calib);
+
+ 		/* Assert global reset (keep REF_RST_N high) */
+ 		regmap_update_bits(pcs_pma, AIROHA_PCS_PMA_SW_RST_SET,
+@@ -2048,6 +2050,26 @@ void an7581_pcs_phya_link_up(struct airoha_pcs_priv *priv, int index)
+ 		usleep_range(5000, 7000);
+
+ 		an7581_pcs_cdr_reset(priv, index, priv->interface, false);
++
++		/* Manual RX calibration: confirm the FreqDet FBCK module
++		 * has locked after the global reset, otherwise re-run the
++		 * calibrate+reset sequence. Same logic as
++		 * an7581_pcs_phya_bringup() for the equivalent code path.
++		 */
++		if (!priv->manual_rx_calib)
++			return;
++
++		regmap_read(pcs_pma, AIROHA_PCS_PMA_RX_FREQDET, &val);
++		if (!(val & AIROHA_PCS_PMA_FBCK_LOCK)) {
++			if (calibration_try > AIROHA_PCS_MAX_CALIBRATION_TRY) {
++				dev_err(priv->dev, "link_up: No FBCK Lock from FreqDet module after %d calibration try. PCS won't work.\n",
++					AIROHA_PCS_MAX_CALIBRATION_TRY);
++				return;
++			}
++			calibration_try++;
++			dev_dbg(priv->dev, "link_up: No FBCK Lock from FreqDet module, retry calibration.\n");
++			goto retry_calibration;
++		}
+ 	}
+ }
+

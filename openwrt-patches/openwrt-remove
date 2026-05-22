@@ -1,0 +1,8 @@
+# Files to remove from the OpenWrt tree after cloning.
+# One relative path per line (relative to the openwrt/ directory).
+# Comments (#) and blank lines are ignored.
+
+# Upstream sets compat_version 2.0 for gemtek,w1700k-ubi, but our ubi profile
+# no longer carries DEVICE_COMPAT_VERSION (it moved to gemtek_w1700k-ubi2).
+# Drop the file so sysupgrade between ubi builds isn't blocked by a phantom 2.0.
+target/linux/airoha/an7581/base-files/etc/board.d/05_compat-version
