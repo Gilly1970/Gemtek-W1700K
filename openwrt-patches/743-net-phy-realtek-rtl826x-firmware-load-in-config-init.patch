@@ -1,0 +1,114 @@
+From: Gilly <gilroyscott1970@gmail.com>
+Date: Sat, 25 Apr 2026 00:00:00 +1000
+Subject: net: phy: realtek: move RTL826x firmware load to config_init
+
+rtl8261n_probe() / rtl8264b_probe() call rtl826x_phy_patch_db_init()
+which uses request_firmware_direct() and returns -EPROBE_DEFER when
+rtl8261n.bin / rtl8264b.bin are not yet available (squashfs not mounted).
+The kernel retries probe at ~1s intervals, delaying PHY attach by
+several seconds.
+
+Move firmware loading from probe() to config_init():
+
+--- a/drivers/net/phy/realtek/realtek.h
++++ b/drivers/net/phy/realtek/realtek.h
+@@ -10,6 +10,7 @@
+
+ struct rtl826x_priv {
+ 	struct rtlgen_phy_patch_db *patch;
++	const char *fw_name;
+ 	bool pnswap_tx:1;
+ 	bool pnswap_rx:1;
+ };
+--- a/drivers/net/phy/realtek/phy_patch_rtl826x.h
++++ b/drivers/net/phy/realtek/phy_patch_rtl826x.h
+@@ -5,6 +5,7 @@
+
+ #include <linux/phy.h>
+
++int rtl826x_phy_patch_db_init(struct phy_device *phydev, const char *fw_name);
+ int rtl8261n_phy_patch_db_init(struct phy_device *phydev);
+ int rtl8264b_phy_patch_db_init(struct phy_device *phydev);
+
+--- a/drivers/net/phy/realtek/phy_patch_rtl826x.c
++++ b/drivers/net/phy/realtek/phy_patch_rtl826x.c
+@@ -223,7 +223,7 @@
+ 	return ret;
+ }
+
+-static int rtl826x_phy_patch_db_init(struct phy_device *phydev, const char *fw_name)
++int rtl826x_phy_patch_db_init(struct phy_device *phydev, const char *fw_name)
+ {
+ 	struct rtl826x_priv *priv = phydev->priv;
+ 	struct device *dev = &phydev->mdio.dev;
+@@ -235,13 +235,8 @@
+
+ 	ret = request_firmware_direct(&fw, fw_name, dev);
+ 	if (ret) {
+-		if (ret == -ENOENT) {
+-			phydev_dbg(phydev, "Failed to request %s: defer probing\n", fw_name);
+-			return -EPROBE_DEFER;
+-		} else {
+-			phydev_err(phydev, "Failed to request %s: %d\n", fw_name, ret);
+-			return ret;
+-		}
++		phydev_err(phydev, "Failed to request %s: %d\n", fw_name, ret);
++		return ret;
+ 	}
+
+ 	if (!fw->size || fw->size % sizeof(*patches) != 0) {
+--- a/drivers/net/phy/realtek/realtek_main.c
++++ b/drivers/net/phy/realtek/realtek_main.c
+@@ -2601,31 +2601,29 @@
+
+ static int rtl8261n_probe(struct phy_device *phydev)
+ {
++	struct rtl826x_priv *priv;
+ 	int ret;
+
+ 	ret = rtl826x_probe(phydev);
+ 	if (ret < 0)
+ 		return ret;
+
+-	ret = rtl8261n_phy_patch_db_init(phydev);
+-	if (ret < 0)
+-		return ret;
+-
++	priv = phydev->priv;
++	priv->fw_name = "rtl8261n.bin";
+ 	return 0;
+ }
+
+ static int rtl8264b_probe(struct phy_device *phydev)
+ {
++	struct rtl826x_priv *priv;
+ 	int ret;
+
+ 	ret = rtl826x_probe(phydev);
+ 	if (ret < 0)
+ 		return ret;
+
+-	ret = rtl8264b_phy_patch_db_init(phydev);
+-	if (ret < 0)
+-		return ret;
+-
++	priv = phydev->priv;
++	priv->fw_name = "rtl8264b.bin";
+ 	return 0;
+ }
+
+@@ -2652,6 +2650,14 @@
+
+ 	msleep(30);
+
++	if (!priv->patch && priv->fw_name) {
++		ret = rtl826x_phy_patch_db_init(phydev, priv->fw_name);
++		if (ret) {
++			phydev_err(phydev, "firmware load failed: %d\n", ret);
++			return ret;
++		}
++	}
++
+ 	ret = rtlgen_phy_patch(phydev);
+ 	if (ret) {
+ 		phydev_err(phydev, "patch failed!! %d\n", ret);

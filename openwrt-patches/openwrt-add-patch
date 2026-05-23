@@ -10,6 +10,9 @@ package/firmware/wireless-regdb/patches/600-world-regd-6GHz.patch
 ### mt76 patches
 package/kernel/mt76/patches/008-wifi-mt76-mt7996-Fix-NULL-pointer-dereference-in-mt7996_init_tx_queues.patch
 
+### Diagnostic: dump tx_free fields when mt7996_mac_tx_free WARNs (T~149s WARN investigation)
+package/kernel/mt76/patches/009-wifi-mt76-mt7996-debug-tx-free-warns.patch
+
 ### Bake NPU firmware into kernel image so airoha-npu probes succeed before rootfs mount
 firmware/airoha/en7581_MT7996_npu_rv32.bin:target/linux/airoha/files/firmware/airoha/en7581_MT7996_npu_rv32.bin
 firmware/airoha/en7581_MT7996_npu_data.bin:target/linux/airoha/files/firmware/airoha/en7581_MT7996_npu_data.bin
@@ -17,6 +20,7 @@ firmware/airoha/en7581_MT7996_npu_data.bin:target/linux/airoha/files/firmware/ai
 ### fix RTL8261N PHY boot failure
 target/linux/airoha/dts/an7581-w1700k-ubi.dts
 an7581-w1700k-ubi2.dts:target/linux/airoha/dts/an7581-w1700k-ubi2.dts
+target/linux/airoha/patches-6.12/743-net-phy-realtek-rtl826x-firmware-load-in-config-init.patch
 
 ### Extend manual RX calibration to E2 silicon (PRODUCT_ID=2)
 target/linux/airoha/patches-6.12/745-net-pcs-airoha-extend-manual-rx-calib-to-E2-silicon.patch
