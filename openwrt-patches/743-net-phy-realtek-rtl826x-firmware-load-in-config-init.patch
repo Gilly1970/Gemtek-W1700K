@@ -10,6 +10,17 @@ several seconds.
 
 Move firmware loading from probe() to config_init():
 
+- Store the firmware filename in priv->fw_name at probe time.
+- Call rtl826x_phy_patch_db_init() from rtl826x_config_init() when
+  priv->patch is still NULL. By the time any network interface is
+  brought up squashfs is guaranteed to be mounted, so the firmware is
+  always available and -EPROBE_DEFER is never needed.
+- Make rtl826x_phy_patch_db_init() non-static and export it for this use.
+
+This is the trimmed-down successor to the original IRQ-race patch.
+The VEND2:INER masking is unnecessary while DTS leaves interrupts
+unwired on phy5/phy8 (the W1700K case).
+
 --- a/drivers/net/phy/realtek/realtek.h
 +++ b/drivers/net/phy/realtek/realtek.h
 @@ -10,6 +10,7 @@

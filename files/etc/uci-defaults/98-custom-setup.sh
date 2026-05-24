@@ -23,6 +23,10 @@ uci set firewall.@defaults[0].flow_offloading_hw=1
 uci commit firewall
 /etc/init.d/firewall restart
 
+# Mark config as compatible with current schema (suppresses sysupgrade compat warning)
+uci set system.@system[0].compat_version="2.0"
+uci commit system
+
 # Enable ARP refresh service (keeps hostnames visible in LuCI connected clients)
 /etc/init.d/arp-refresh enable
 /etc/init.d/arp-refresh start

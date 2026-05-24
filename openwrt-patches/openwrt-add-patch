@@ -10,7 +10,11 @@ package/firmware/wireless-regdb/patches/600-world-regd-6GHz.patch
 ### mt76 patches
 package/kernel/mt76/patches/008-wifi-mt76-mt7996-Fix-NULL-pointer-dereference-in-mt7996_init_tx_queues.patch
 
+### Diagnostic: dump tx_free fields when mt7996_mac_tx_free WARNs (T~149s WARN investigation)
+package/kernel/mt76/patches/009-wifi-mt76-mt7996-debug-tx-free-warns.patch
+
 ### Bake NPU firmware into kernel image so airoha-npu probes succeed before rootfs mount
+### (eliminates the 3x "Direct firmware load failed with error -2" race at boot)
 firmware/airoha/en7581_MT7996_npu_rv32.bin:target/linux/airoha/files/firmware/airoha/en7581_MT7996_npu_rv32.bin
 firmware/airoha/en7581_MT7996_npu_data.bin:target/linux/airoha/files/firmware/airoha/en7581_MT7996_npu_data.bin
 
@@ -82,6 +86,13 @@ target/linux/generic/pending-6.12/741-net-phy-realtek-support-MDI-swapping-for-R
 rtl826x-firmware-Makefile:package/firmware/rtl826x-firmware/Makefile
 an7581.mk:target/linux/airoha/image/an7581.mk
 config-6.12:target/linux/airoha/an7581/config-6.12
+
+### NPU: extend Eagle mbox SER timeout 100s -> 1000s (avoid wedge under slow recovery)
+target/linux/airoha/patches-6.12/117-03-airoha_npu_eagle_add_ser.patch
+
+### br_netfilter panic fix: add skb_cow_head in neigh_hh_bridge (Lorenzo upstream)
+### see reference_br_netfilter_6.18_panic.md - same bug exists in 6.12
+target/linux/airoha/patches-6.12/991-net-neigh-Reallocate-headroom-if-necessary-in-neigh_.patch
 
 ### EIP93 crypto driver fixes (from openwrt/openwrt PR #20130)
 817-v6.15-crypto-inside-secure-eip93-Correctly-handle-return-o.patch:target/linux/airoha/patches-6.12/203-v6.15-crypto-inside-secure-eip93-Correctly-handle-return-o.patch
