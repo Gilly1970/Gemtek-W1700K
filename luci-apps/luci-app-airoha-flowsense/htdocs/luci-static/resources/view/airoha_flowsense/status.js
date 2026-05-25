@@ -228,8 +228,12 @@ function updateBandChip(band, stats) {
 
 /* ── CPU Frequency State (used by CPU/NPU tachometer) ── */
 function freqBarState(hw, min, max, pll, gov) {
-	var oc = gov==='performance' && pll>0 && (pll*1000)>max;
-	return { freq: oc ? pll*1000 : Math.min(hw,max), max: oc ? pll*1000 : max, oc: oc };
+	var pll_khz = (pll || 0) * 1000;
+	// cpufreq sysfs missing (e.g. AN7581 broken DVFS) — fall back to PLL hardware read
+	if (!hw && pll_khz > 0)
+		return { freq: pll_khz, max: pll_khz, oc: false };
+	var oc = gov==='performance' && pll>0 && pll_khz>max;
+	return { freq: oc ? pll_khz : Math.min(hw,max), max: oc ? pll_khz : max, oc: oc };
 }
 
 
@@ -446,7 +450,7 @@ function buildTachoInner(ppe, cs, mode) {
 	}
 
 	// Centre readout — mode + status at top, BND count large, IPv4/IPv6 split, UNB below
-	p.push('<text x="150" y="113" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="monospace" letter-spacing="2">'+modeText+'</text>');
+	p.push('<text x="150" y="113" text-anchor="middle" fill="var(--soc-text)" font-size="9" font-weight="700" font-family="monospace" letter-spacing="2">'+modeText+'</text>');
 	p.push('<text x="150" y="124" text-anchor="middle" fill="'+statusCol+'" font-size="7" font-family="monospace" letter-spacing="1">'+statusText+'</text>');
 	p.push('<text x="150" y="144" text-anchor="middle" fill="'+bndColor+'" font-size="22" font-weight="700" font-family="monospace">'+bndTot+'</text>');
 	p.push('<text x="150" y="155" text-anchor="middle" fill="var(--soc-muted)" font-size="7" font-family="monospace" letter-spacing="2">BND FLOWS</text>');
@@ -851,7 +855,7 @@ function buildCpuNpuTacho(cs, ppe, st) {
 	// CPU frequency — same source as the existing freq bar
 	var fs       = freqBarState(st.cpu_hw_freq, st.cpu_min_freq, st.cpu_max_freq, st.pll_freq_mhz, st.cpu_governor);
 	var freqMhz  = Math.round(fs.freq / 1000);
-	var governor = (st.cpu_governor || '').toUpperCase();
+	var governor = (st.cpu_governor && st.cpu_governor !== 'unknown') ? st.cpu_governor.toUpperCase() : '';
 
 	// Colours
 	var npuStatusCol = cs.npuActive ? '#00c8ff' : (cs.hwEnabled ? '#888' : '#ff6b35');
@@ -905,7 +909,7 @@ function buildCpuNpuTacho(cs, ppe, st) {
 	}
 
 	// Centre readout
-	if (governor) p.push('<text x="150" y="118" text-anchor="middle" fill="white" font-size="7" font-family="monospace" letter-spacing="1">'+governor+'</text>');
+	if (governor) p.push('<text x="150" y="118" text-anchor="middle" fill="var(--soc-text)" font-size="7" font-family="monospace" letter-spacing="1">'+governor+'</text>');
 	if (freqMhz)  p.push('<text x="150" y="130" text-anchor="middle" fill="#00cc44" font-size="9" font-weight="700" font-family="monospace">'+freqMhz+' MHz</text>');
 	p.push('<text x="150" y="148" text-anchor="middle" fill="#ffe066" font-size="22" font-weight="700" font-family="monospace">'+cpuPct+'%</text>');
 	p.push('<text x="150" y="159" text-anchor="middle" fill="#ffe066" font-size="7" font-family="monospace" letter-spacing="2">CPU LOAD</text>');
@@ -1147,9 +1151,11 @@ function _ethLabel(iface) {
 }
 function _ethSpeed(speed) {
 	if (!speed || speed <= 0) return 'NO LINK';
-	if (speed >= 2500) return '2.5G';
-	if (speed >= 1000) return '1G';
-	if (speed >= 100)  return '100M';
+	if (speed >= 10000) return '10G';
+	if (speed >= 5000)  return '5G';
+	if (speed >= 2500)  return '2.5G';
+	if (speed >= 1000)  return '1G';
+	if (speed >= 100)   return '100M';
 	return speed + 'M';
 }
 function _ethFmt(mbps) {
@@ -1208,12 +1214,12 @@ function buildEthPortSVG(port, txMbps, rxMbps, ppe) {
 	'<text x="12" y="35" fill="#00c8ff" font-size="9" font-family="monospace" letter-spacing="1" opacity="'+dimOp+'">TX</text>' +
 	'<rect x="30" y="26" width="'+barW+'" height="13" rx="3" fill="#1e1e1e" opacity="'+dimOp+'"/>' +
 	(txPct > 0 ? '<rect x="30" y="26" width="'+txW+'" height="13" rx="3" fill="#00c8ff" opacity="'+dimOp+'"/>' : '') +
-	'<text x="218" y="35" text-anchor="end" fill="white" font-size="10" font-weight="700" font-family="monospace" opacity="'+dimOp+'">'+txVal+'</text>' +
+	'<text x="218" y="35" text-anchor="end" fill="var(--soc-text)" font-size="10" font-weight="700" font-family="monospace" opacity="'+dimOp+'">'+txVal+'</text>' +
 	'<text x="234" y="35" text-anchor="end" fill="var(--soc-muted)" font-size="7" font-family="monospace" opacity="'+dimOp+'">Mb</text>' +
 	'<text x="12" y="59" fill="#ff6b35" font-size="9" font-family="monospace" letter-spacing="1" opacity="'+dimOp+'">RX</text>' +
 	'<rect x="30" y="50" width="'+barW+'" height="13" rx="3" fill="#1e1e1e" opacity="'+dimOp+'"/>' +
 	(rxPct > 0 ? '<rect x="30" y="50" width="'+rxW+'" height="13" rx="3" fill="#ff6b35" opacity="'+dimOp+'"/>' : '') +
-	'<text x="218" y="59" text-anchor="end" fill="white" font-size="10" font-weight="700" font-family="monospace" opacity="'+dimOp+'">'+rxVal+'</text>' +
+	'<text x="218" y="59" text-anchor="end" fill="var(--soc-text)" font-size="10" font-weight="700" font-family="monospace" opacity="'+dimOp+'">'+rxVal+'</text>' +
 	'<text x="234" y="59" text-anchor="end" fill="var(--soc-muted)" font-size="7" font-family="monospace" opacity="'+dimOp+'">Mb</text>' +
 	'<text x="120" y="80" text-anchor="middle" fill="'+footerClr+'" font-size="7.5" font-family="monospace">'+footerTxt+'</text>' +
 	'</svg>';
