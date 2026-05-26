@@ -21,9 +21,9 @@ loaded by ~12s into boot; fw4 runs at ~25-40s, so the NPU is always ready.
  				     struct flow_block_offload *f)
  {
  	flow_setup_cb_t *cb = airoha_dev_setup_tc_block_cb;
-+	struct airoha_gdm_port *port = netdev_priv(dev);
++	struct airoha_gdm_dev *gdm_dev = netdev_priv(dev);
  	static LIST_HEAD(block_cb_list);
-+	struct airoha_eth *eth = port->qdma->eth;
++	struct airoha_eth *eth = gdm_dev->eth;
  	struct flow_block_cb *block_cb;
  
  	if (f->binder_type != FLOW_BLOCK_BINDER_TYPE_CLSACT_INGRESS)
