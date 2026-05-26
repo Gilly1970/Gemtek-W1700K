@@ -866,8 +866,8 @@ function buildCpuNpuTacho(cs, ppe, st) {
 	// Outer ring (CW, r=71-81): CPU frequency, 500–1400 MHz
 	var FREQ_MIN = 500, FREQ_MAX = 1400;
 	var freqLit = Math.round(Math.max(0, Math.min(TICKS, (freqMhz - FREQ_MIN) / (FREQ_MAX - FREQ_MIN) * TICKS)));
-	// Inner ring (anti-CW, r=57-67): CPU load, 0–40% = full scale (more sensitive)
-	var cpuLit = Math.round(Math.min(cpuPct, 40) / 40 * TICKS);
+	// Inner ring (anti-CW, r=57-67): CPU load, 0–100% = full scale
+	var cpuLit = Math.round(Math.min(cpuPct, 100) / 100 * TICKS);
 
 	var cx = 150, cy = 150;
 	var p = [];
