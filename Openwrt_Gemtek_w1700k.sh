@@ -288,9 +288,6 @@ copy_custom_files() {
     fi
     mkdir -p "$target_dir"
     rsync -a "$source_dir/" "$target_dir/"
-    # Defensive: ensure shell scripts and init scripts in the runtime overlay are executable.
-    # OpenWrt's image build packages files/ as-is, so a 644 .sh here ships to the router as 644
-    # and the boot-time hook (e.g. /etc/init.d/packet_steering) silently fails permission-denied.
     find "$target_dir" -type f \( -name '*.sh' -o -path '*/etc/init.d/*' -o -path '*/usr/libexec/rpcd/*' \) -exec chmod +x {} +
     log "Custom files have been copied successfully."
 }
