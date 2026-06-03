@@ -20,13 +20,13 @@ index d5e1d6c..dcd4c59 100644
  
  	# Item 12(a) (1000 mW with TPC)
 -	(5470 - 5600 @ 80), (500 mW), DFS
-+	(5470 - 5600 @ 80), (500 mW)
++	(5470 - 5725 @ 160), (500 mW)
  
  	# Item 12(b) (1000 mW with TPC)
  	# The end is 5725 but we borrow 5 MHz from the following less restrictive band
  	# so we can get an 80 MHz channel.
 -	(5650 - 5730 @ 80), (500 mW), DFS
-+	(5650 - 5730 @ 80), (500 mW)
++	#(5650 - 5730 @ 80), (500 mW)
  
  	# Item 9
  	(5730 - 5850 @ 80), (4000 mW), AUTO-BW
